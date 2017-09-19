@@ -9,7 +9,7 @@
 
 PROJECT_ID=${PROJECT_ID:?"PROJECT_ID required"}
 FIREBASE_TOKEN=${FIREBASE_TOKEN:?"FIREBASE_TOKEN required"}
-RELEASE=${RELEASE:?"RELEASE is required"}
+#RELEASE=${RELEASE:?"RELEASE is required"}
 
 if [[ -z ${INDOCKER} ]];then
 	docker run --rm --label=jekyll --volume=$(pwd):/srv/jekyll \
@@ -24,9 +24,11 @@ else
 	# TODO bake a new docker image with correct versions from bundler
 	PUBLIC=_static_site
 	rm -Rf ${PUBLIC} ; mkdir ${PUBLIC}
-	echo "baseurl: /v-${RELEASE}" > config_override.yml
-	jekyll build --config _config.yml,config_override.yml
-	mv _site "${PUBLIC}/v-${RELEASE}"
+	#echo "baseurl: /v-${RELEASE}" > config_override.yml
+        bundle install
+	jekyll build --config _config.yml #,config_override.yml
+	#mv _site "${PUBLIC}/v-${RELEASE}"
+	mv _site "${PUBLIC}"
 	npm install -g firebase-tools
 	firebase use $PROJECT_ID --non-interactive --token $FIREBASE_TOKEN
 	firebase deploy --public ${PUBLIC} --non-interactive --token $FIREBASE_TOKEN
