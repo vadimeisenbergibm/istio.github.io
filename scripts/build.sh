@@ -23,7 +23,7 @@ else
 	# The directory now is /srv/jekyll inside the container
 	# TODO bake a new docker image with correct versions from bundler
 	PUBLIC=_static_site
-	rm -Rf ${PUBLIC} ; mkdir ${PUBLIC}
+	rm -Rf ${PUBLIC} #; mkdir ${PUBLIC}
 	#echo "baseurl: /v-${RELEASE}" > config_override.yml
         bundle install
 	jekyll build --config _config.yml #,config_override.yml
