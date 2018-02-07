@@ -13,7 +13,7 @@ redirect_from: "/blog/egress-tcp.html"
 ---
 {% include home.html %}
 
-In my previous blog post, [Consuming External Web Services]({{home}}/blog/2018/egress-https.html), I described how external services can be consumed by in-mesh Istio applications via HTTPS. In this post, I demonstrate consuming external services over TCP. I use the [Istio Bookinfo sample application]({{home}}/docs/guides/bookinfo.html), the version in which the book ratings data is persisted in a MySQL database. I deploy this database outside the cluster and will configure the _ratings_ microservice to use it. I define an [egress rule]({{home}}/docs/reference/config/istio.routing.v1alpha1.html#EgressRule) to allow the in-mesh applications access the external database.
+In my previous blog post, [Consuming External Web Services]({{home}}/blog/2018/egress-https.html), I described how external services can be consumed by in-mesh Istio applications via HTTPS. In this post, I demonstrate consuming external services over TCP. I use the [Istio Bookinfo sample application]({{home}}/docs/guides/bookinfo.html), the version in which the book ratings data is persisted in a MySQL database. I deploy this database outside the cluster and will configure the _ratings_ microservice to use it. I define an [egress rule]({{home}}/docs/reference/config/istio.routing.v1alpha1.html#EgressRule) to allow the in-mesh applications to access the external database.
 
 ## Bookinfo sample application with external ratings database
 First, I set up a MySQL database instance to hold book ratings data, outside my Kubernetes cluster. Then I modify the [Bookinfo sample application]({{home}}/docs/guides/bookinfo.html) to use my database.
@@ -122,7 +122,7 @@ To demonstrate the scenario of using an external database, I start with a Kubern
 
 The example commands in this blog post work with Istio version 0.3+, with or without [Mutual TLS]({{home}}/docs/concepts/security/mutual-tls.html) enabled.
 
-Let me remind you the end-to-end architecture of the application from the original [Bookinfo Guide]({{home}}/docs/guides/bookinfo.html).
+As a reminder, here is the end-to-end architecture of the application from the [Bookinfo Guide]({{home}}/docs/guides/bookinfo.html).
 
 {% assign url = home | append: "/docs/guides/img/bookinfo/withistio.svg" %}
 {% include figure.html width='80%' ratio='59.08%'
@@ -166,7 +166,7 @@ Let me remind you the end-to-end architecture of the application from the origin
    Created config route-rule/default/reviews-test-ratings-v2 at revision 1918800
    ```
 
-The updated architecture appears below. Note that the blue arrows inside the mesh mark the traffic allowed by the route rules we added. According to the route rules, the traffic is allowed to _reviews v3_ and _ratings v2-mysql_.
+The updated architecture appears below. Note that the blue arrows inside the mesh mark the traffic sent according to the route rules we added. According to the route rules, the traffic is sent to _reviews v3_ and _ratings v2-mysql_.
 
 {% include figure.html width='80%' ratio='59.31%'
     img='./img/bookinfo-ratings-v2-mysql-external.svg'
