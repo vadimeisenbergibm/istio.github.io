@@ -47,7 +47,7 @@ from within your Istio cluster. In this task we will use
 
 ### Configuring the external services
 
-1.  Create an `ServiceEntry` to allow access to an external HTTP service:
+1.  Create a `ServiceEntry` to allow access to an external HTTP service:
 
     ```bash
         cat <<EOF | istioctl create -f -
@@ -65,7 +65,7 @@ from within your Istio cluster. In this task we will use
         EOF
     ```
 
-1.  Create an `ServiceEntry` to allow access to an external HTTPS service:
+1.  Create a `ServiceEntry` and a `VirtualService` to allow access to an external HTTPS service:
 
     ```bash
         cat <<EOF | istioctl create -f -
@@ -78,11 +78,74 @@ from within your Istio cluster. In this task we will use
           - www.google.com
           ports:
           - number: 443
-            name: https
-            protocol: HTTPS
+            name: tls
+            protocol: TLS
+          resolution: DNS
+        ---
+        apiVersion: networking.istio.io/v1alpha3
+        kind: VirtualService
+        metadata:
+          name: google-ext
+        spec:
+          hosts:
+          - www.google.com
+          gateways:
+          - mesh
+          tls:
+          - match:
+            - gateways:
+              - mesh
+              port: 443
+              sni_hosts:
+              - www.google.com
+            route:
+            - destination:
+                host: www.google.com
+                port:
+                  number: 443
+              weight: 100
         EOF
     ```
 
+    ```bash
+        cat <<EOF | istioctl create -f -
+        apiVersion: networking.istio.io/v1alpha3
+        kind: ServiceEntry
+        metadata:
+          name: cnn-ext
+        spec:
+          hosts:
+          - edition.cnn.com
+          ports:
+          - number: 443
+            name: tls
+            protocol: TLS
+          resolution: DNS
+        ---
+        apiVersion: networking.istio.io/v1alpha3
+        kind: VirtualService
+        metadata:
+          name: cnn-ext
+        spec:
+          hosts:
+          - edition.cnn.com
+          gateways:
+          - mesh
+          tls:
+          - match:
+            - gateways:
+              - mesh
+              port: 443
+              sni_hosts:
+              - edition.cnn.com
+            route:
+            - destination:
+                host: edition.cnn.com
+                port:
+                  number: 443
+              weight: 100
+        EOF
+    ```
 ### Make requests to the external services
 
 1.  Exec into the pod being used as the test source. For example,
@@ -99,10 +162,11 @@ from within your Istio cluster. In this task we will use
     $ curl http://httpbin.org/headers
     ```
 
-1.  Make a request to the external HTTPS service:
+1.  Make requests to the external HTTPS services:
 
     ```command
     $ curl https://www.google.com
+    $ curl https://edition.cnn.com
     ```
 
 ### Setting route rules on an external service
@@ -262,8 +326,8 @@ cloud provider specific knowledge and configuration.
 1.  Remove the rules.
 
     ```command
-    $ istioctl delete serviceentry httpbin-ext google-ext
-    $ istioctl delete virtualservice httpbin-ext
+    $ istioctl delete serviceentry httpbin-ext google-ext cnn-ext
+    $ istioctl delete virtualservice httpbin-ext google-ext cnn-ext
     ```
 
 1.  Shutdown the [sleep](https://github.com/istio/istio/tree/{{<branch_name>}}/samples/sleep) service.
