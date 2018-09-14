@@ -923,48 +923,44 @@ English and the French versions.
     {{< text bash >}}
     $ cat <<EOF | kubectl create -f -
     apiVersion: "config.istio.io/v1alpha2"
-    kind: denier
+    kind: listentry
     metadata:
-      name: forbidden-access
+      name: requested-server-name
       namespace: istio-system
     spec:
-      status:
-        code: 7
-        message: Not allowed
+      value: connection.requested_server_name
     ---
     apiVersion: "config.istio.io/v1alpha2"
-    kind: checknothing
+    kind: listchecker
     metadata:
-      name: null-instance
+      name: us-wikipedia-checker
       namespace: istio-system
     spec:
+      overrides: ["en.wikipedia.org", "es.wikipedia.org"]
+      blacklist: false
     ---
+    # Rule to check access to *.wikipedia.org
     apiVersion: "config.istio.io/v1alpha2"
     kind: rule
     metadata:
-      name: deny-forbidden-access
+      name: check-us-wikipedia-access
       namespace: istio-system
     spec:
-      match: source.labels["app"] == "istio-egressgateway-with-sni-proxy" && destination.labels["app"] == "" && (connection.requested_server_name != "en.wikipedia.org" && connection.requested_server_name != "es.wikipedia.org" && source.principal == "cluster.local/ns/default/sa/us") || (connection.requested_server_name != "en.wikipedia.org" && connection.requested_server_name != "fr.wikipedia.org" && source.principal == "cluster.local/ns/default/sa/canada")
+      match: source.labels["app"] == "istio-egressgateway-with-sni-proxy" && destination.labels["app"] == ""
       actions:
-      - handler: forbidden-access.denier
-        instances: [ null-instance.checknothing ]
+      - handler: us-wikipedia-checker.listchecker
+        instances:
+          - requested-server-name.listentry
     EOF
     {{< /text >}}
 
 1.  Resend HTTPS requests to Wikipedia sites in English, German, Spanish and French, from `sleep-us`:
 
     {{< text bash >}}
-    $ kubectl exec -it $(kubectl get pod -l app=sleep-us -o jsonpath='{.items[0].metadata.name}') -c sleep -- bash -c 'curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"; curl -s https://es.wikipedia.org/wiki/Wikipedia:Portada | grep -o "<title>.*</title>"; curl -s https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal | grep -o "<title>.*</title>";:'
+    $ kubectl exec -it $(kubectl get pod -l app=sleep-us -o jsonpath='{.items[0].metadata.name}') -c sleep -- bash -c 'curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"; curl -s https://es.wikipedia.org/wiki/Wikipedia:Portada | grep -o "<title>.*</title>"; curl -s https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal | grep -o "<title>.*</title>"'
     <title>Wikipedia, the free encyclopedia</title>
+    <title>Wikipedia – Die freie Enzyklopädie</title>
     <title>Wikipedia, la enciclopedia libre</title>
-    {{< /text >}}
-
-1. Resend HTTPS requests to Wikipedia sites in English, German, Spanish and French, from `sleep-canada`:
-
-    {{< text bash >}}
-    $ kubectl exec -it $(kubectl get pod -l app=sleep-canada -o jsonpath='{.items[0].metadata.name}') -c sleep -- bash -c 'curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"; curl -s https://es.wikipedia.org/wiki/Wikipedia:Portada | grep -o "<title>.*</title>"; curl -s https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal | grep -o "<title>.*</title>";:'
-    <title>Wikipedia, the free encyclopedia</title>
     <title>Wikipédia, l'encyclopédie libre</title>
     {{< /text >}}
 
@@ -974,11 +970,11 @@ English and the French versions.
 $ kubectl delete serviceaccount us canada
 $ kubectl delete service sleep-us sleep-canada
 $ kubectl delete deployment sleep-us sleep-canada
-$ kubectl delete rule handle-wikipedia-access deny-forbidden-access -n istio-system
+$ kubectl delete rule handle-wikipedia-access check-us-wikipedia-access -n istio-system
 $ kubectl delete logentry egress-access -n istio-system
 $ kubectl delete stdio egress-access-logger -n istio-system
-$ kubectl delete checknothing null-instance -n istio-system
-$ kubectl delete denier forbidden-access -n istio-system
+$ kubectl delete listentry requested-server-name -n istio-system
+$ kubectl delete listchecker us-wikipedia-checker -n istio-system
 {{< /text >}}
 
 ### Cleanup of HTTPS traffic configuration to arbitrary wildcarded domains
