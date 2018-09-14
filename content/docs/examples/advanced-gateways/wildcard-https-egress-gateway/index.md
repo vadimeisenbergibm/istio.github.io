@@ -951,6 +951,28 @@ English and the French versions.
       - handler: us-wikipedia-checker.listchecker
         instances:
           - requested-server-name.listentry
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: listchecker
+    metadata:
+      name: canada-wikipedia-checker
+      namespace: istio-system
+    spec:
+      overrides: ["en.wikipedia.org", "fr.wikipedia.org"]
+      blacklist: false
+    ---
+    # Rule to check access to *.wikipedia.org
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: rule
+    metadata:
+      name: check-canada-wikipedia-access
+      namespace: istio-system
+    spec:
+      match: source.labels["app"] == "istio-egressgateway-with-sni-proxy" && destination.labels["app"] == "" && source.principal == "cluster.local/ns/default/sa/canada"
+      actions:
+      - handler: canada-wikipedia-checker.listchecker
+        instances:
+          - requested-server-name.listentry
     EOF
     {{< /text >}}
 
@@ -983,11 +1005,11 @@ English and the French versions.
 $ kubectl delete serviceaccount us canada
 $ kubectl delete service sleep-us sleep-canada
 $ kubectl delete deployment sleep-us sleep-canada
-$ kubectl delete rule handle-wikipedia-access check-us-wikipedia-access -n istio-system
+$ kubectl delete rule handle-wikipedia-access check-us-wikipedia-access check-canada-wikipedia-access -n istio-system
 $ kubectl delete logentry egress-access -n istio-system
 $ kubectl delete stdio egress-access-logger -n istio-system
 $ kubectl delete listentry requested-server-name -n istio-system
-$ kubectl delete listchecker us-wikipedia-checker -n istio-system
+$ kubectl delete listchecker us-wikipedia-checker canada-wikipedia-checker -n istio-system
 {{< /text >}}
 
 ### Cleanup of HTTPS traffic configuration to arbitrary wildcarded domains
