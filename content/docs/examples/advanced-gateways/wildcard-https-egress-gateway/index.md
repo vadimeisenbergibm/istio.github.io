@@ -946,7 +946,7 @@ English and the French versions.
       name: check-us-wikipedia-access
       namespace: istio-system
     spec:
-      match: source.labels["app"] == "istio-egressgateway-with-sni-proxy" && destination.labels["app"] == ""
+      match: source.labels["app"] == "istio-egressgateway-with-sni-proxy" && destination.labels["app"] == "" && source.principal == "cluster.local/ns/default/sa/us"
       actions:
       - handler: us-wikipedia-checker.listchecker
         instances:
