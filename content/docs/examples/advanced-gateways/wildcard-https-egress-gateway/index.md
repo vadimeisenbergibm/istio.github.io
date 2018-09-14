@@ -962,6 +962,13 @@ English and the French versions.
     <title>Wikipedia, la enciclopedia libre</title>
     {{< /text >}}
 
+    > It may take several minutes for the Mixer policy components to synchronize on the new policy. In case you want to
+    quickly demonstrate the new policy without waiting until the synchronization is complete, kill the Mixer policy pods:
+
+    {{< text bash >}}
+    $ for POLICY_POD in $(kubectl -n istio-system get pods -l istio-mixer-type=policy -o jsonpath='{.items[*].metadata.name}'); do kubectl -n istio-system delete pod $POLICY_POD; done
+    {{< /text >}}
+
 1.  Resend HTTPS requests to Wikipedia sites in English, German, Spanish and French, from `sleep-canada`:
 
     {{< text bash >}}
