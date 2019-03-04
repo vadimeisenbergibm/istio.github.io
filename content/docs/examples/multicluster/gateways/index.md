@@ -46,12 +46,28 @@ running in a second cluster.
     $ export SLEEP_POD=$(kubectl get --context=$CTX_CLUSTER1 -n foo pod -l app=sleep -o jsonpath={.items..metadata.name})
     {{< /text >}}
 
-1. Deploy the `httpbin` service in `cluster2`.
+1.  Deploy the `httpbin` service in `cluster2`.
 
     {{< text bash >}}
     $ kubectl create --context=$CTX_CLUSTER2 namespace bar
     $ kubectl label --context=$CTX_CLUSTER2 namespace bar istio-injection=enabled
     $ kubectl apply --context=$CTX_CLUSTER2 -n bar -f @samples/httpbin/httpbin.yaml@
+    {{< /text >}}
+
+1.  If you want to enable Istio mutual TLS on the `httpbin` service:
+
+    {{< text bash >}}
+    $ cat <<EOF | kubectl apply --context=$CTX_CLUSTER2 -n bar -f -
+    apiVersion: authentication.istio.io/v1alpha1
+    kind: Policy
+    metadata:
+      name: httpbin
+    spec:
+      targets:
+      - name: httpbin
+      peers:
+      - mtls: {}
+    EOF
     {{< /text >}}
 
 1. Export the `cluster2` gateway address:
@@ -126,7 +142,7 @@ running in a second cluster.
       # routed to this address.
       - address: ${CLUSTER2_GW_ADDR}
         ports:
-          http1: 15443 # Do not change this port value
+          http1: ${CLUSTER2_GW_PORT}
     EOF
     {{< /text >}}
 
@@ -143,6 +159,22 @@ running in a second cluster.
     {{< warning >}}
     Do not create a `Gateway` configuration for port 15443.
     {{< /warning >}}
+
+1.  If you have Istio mutual TLS enabled on `httpbin`, create a destination rule for `httpbin.bar.global` in `cluster1`:
+
+    {{< text bash >}}
+    $ cat <<EOF | kubectl apply --context=$CTX_CLUSTER1 -n foo -f -
+    apiVersion: networking.istio.io/v1alpha3
+    kind: DestinationRule
+    metadata:
+      name: httpbin
+    spec:
+      host: httpbin.bar.global
+      trafficPolicy:
+        tls:
+          mode: ISTIO_MUTUAL
+    EOF
+    {{< /text >}}
 
 1. Verify that `httpbin` is accessible from the `sleep` service.
 
