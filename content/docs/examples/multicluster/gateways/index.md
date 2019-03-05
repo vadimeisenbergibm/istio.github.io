@@ -138,16 +138,19 @@ running in a second cluster.
 
     The configurations above will result in all traffic in `cluster1` for
     `httpbin.bar.global` on *any port* to be routed to the endpoint
-    `<IPofCluster2IngressGateway>:15443` over an mTLS connection.
+    `<IPofCluster2IngressGateway>:<PortOfCluster2IngressGateway>` over an mTLS connection. The traffic for
+    `httpbin.bar.global` will enter the ingress gateway service on port 443.
 
-    The gateway for port 15443 is a special SNI-aware Envoy
-    preconfigured and installed as part of the multicluster Istio installation step
-    in the [before you begin](#before-you-begin) section. Traffic entering port 15443 will be
-    load balanced among pods of the appropriate internal service of the target
+    An Istio ingress gateway will load-balance the traffic entering port 443 for hosts "*.global",
+    among pods of the appropriate internal service of the target
     cluster (in this case, `httpbin.bar` in `cluster2`).
 
+    The gateway for hosts "*.global" on port 443 is a special SNI-aware Envoy
+    preconfigured and installed as part of the multicluster Istio installation step
+    in the [before you begin](#before-you-begin) section.
+
     {{< warning >}}
-    Do not create a `Gateway` configuration for port 15443.
+    Do not create a `Gateway` configuration for hosts "*.global" on port 443.
     {{< /warning >}}
 
 1.  If you have Istio mutual TLS enabled on `httpbin`, create a destination rule for `httpbin.bar.global` in `cluster1`:
