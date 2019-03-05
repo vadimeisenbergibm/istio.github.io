@@ -54,7 +54,7 @@ running in a second cluster.
     $ kubectl apply --context=$CTX_CLUSTER2 -n bar -f @samples/httpbin/httpbin.yaml@
     {{< /text >}}
 
-1.  If you want to enable Istio mutual TLS on the `httpbin` service:
+1.  Enable Istio mutual TLS on the `httpbin` service:
 
     {{< text bash >}}
     $ cat <<EOF | kubectl apply --context=$CTX_CLUSTER2 -n bar -f -
