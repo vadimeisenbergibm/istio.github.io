@@ -61,8 +61,8 @@ running in a second cluster.
    gateway of `cluster2`:
 
     {{< text bash >}}
-    $ export CLUSTER2_GW_ADDR=INGRESS_HOST
-    $ export CLUSTER2_GW_PORT=SECURE_INGRESS_PORT
+    $ export CLUSTER2_GW_ADDR=$INGRESS_HOST
+    $ export CLUSTER2_GW_PORT=$SECURE_INGRESS_PORT
     {{< /text >}}
 
 1. Create a service entry for the `httpbin` service in `cluster1`.
