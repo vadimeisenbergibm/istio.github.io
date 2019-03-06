@@ -138,7 +138,7 @@ running in a second cluster.
     Do not create a `Gateway` configuration for hosts "*.global" on port 443.
     {{< /warning >}}
 
-1.  If you have Istio mutual TLS enabled on `httpbin`, create a destination rule for `httpbin.bar.global` in `cluster1`:
+1.  Create a destination rule for `httpbin.bar.global` in `cluster1`, to enable mutual TLS on the traffic to it:
 
     {{< text bash >}}
     $ cat <<EOF | kubectl apply --context=$CTX_CLUSTER1 -n foo -f -
