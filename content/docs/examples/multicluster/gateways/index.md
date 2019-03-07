@@ -260,3 +260,5 @@ Execute the following commands to clean up the example services.
     $ kubectl delete --context=$CTX_CLUSTER2 -n bar -f @samples/httpbin/httpbin.yaml@
     $ kubectl delete --context=$CTX_CLUSTER1 ns bar
     {{< /text >}}
+
+* [Disable Envoy’s access logging](/docs/tasks/telemetry/access-log/#cleanup) for both clusters.
