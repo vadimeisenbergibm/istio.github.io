@@ -194,10 +194,10 @@ spec:
   - address: ${CLUSTER2_GW_ADDR}
     network: external
     ports:
-      http1: 15443 # Do not change this port value
+      http1: ${CLUSTER2_GW_PORT}
   - address: istio-egressgateway.istio-system.svc.cluster.local
     ports:
-      http1: 15443
+      http1: 443
 EOF
 {{< /text >}}
 
