@@ -259,7 +259,7 @@ spec:
     labels:
       cluster: cluster2
     ports:
-      http1: 15443 # Do not change this port value
+      http1: ${CLUSTER2_GW_PORT}
 EOF
 {{< /text >}}
 
