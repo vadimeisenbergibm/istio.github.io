@@ -20,6 +20,8 @@ running in a second cluster.
 
 {{< boilerplate kubectl-multicluster-contexts >}}
 
+* [Enable Envoy’s access logging](/docs/tasks/telemetry/access-log/#enable-envoy-s-access-logging) for both clusters.
+
 ## Configure the example services
 
 1. Deploy the `sleep` service in `cluster1`.
