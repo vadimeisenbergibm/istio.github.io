@@ -38,22 +38,7 @@ To start, you'll need two Kubernetes clusters, both running a slightly customize
 * Set up a multicluster environment with two Istio clusters by following the
     [multiple control planes with gateways](/docs/setup/kubernetes/multicluster/gateways/) instructions.
 
-* The `kubectl` command is used to access both clusters with the `--context` flag.
-    Use the following command to list your contexts:
-
-    {{< text bash >}}
-    $ kubectl config get-contexts
-    CURRENT   NAME       CLUSTER    AUTHINFO       NAMESPACE
-    *         cluster1   cluster1   user@foo.com   default
-              cluster2   cluster2   user@foo.com   default
-    {{< /text >}}
-
-* Export the following environment variables with the context names of your configuration:
-
-    {{< text bash >}}
-    $ export CTX_CLUSTER1=<cluster1 context name>
-    $ export CTX_CLUSTER2=<cluster2 context name>
-    {{< /text >}}
+{{< boilerplate kubectl-multicluster-contexts >}}
 
 ## Deploy version v1 of the `bookinfo` application in `cluster1`
 
