@@ -175,38 +175,58 @@ If you want to route traffic from `cluster1` via a dedicated
 egress gateway, instead of directly from the sidecars,
 use the following service entry for `httpbin.bar` instead of the one in the previous section.
 
-{{< tip >}}
-The egress gateway used in this configuration cannot also be used for other, non inter-cluster, egress traffic.
-{{< /tip >}}
+1.  Replace the service entry for `httpbin-bar`:
 
-{{< text bash >}}
-$ kubectl apply --context=$CTX_CLUSTER1 -n foo -f - <<EOF
-apiVersion: networking.istio.io/v1alpha3
-kind: ServiceEntry
-metadata:
-  name: httpbin-bar
-spec:
-  hosts:
-  # must be of form name.namespace.global
-  - httpbin.bar.global
-  location: MESH_INTERNAL
-  ports:
-  - name: http1
-    number: 8000
-    protocol: http
-  resolution: DNS
-  addresses:
-  - 127.255.0.2
-  endpoints:
-  - address: ${CLUSTER2_GW_ADDR}
-    network: external
-    ports:
-      http1: ${CLUSTER2_GW_PORT}
-  - address: istio-egressgateway.istio-system.svc.cluster.local
-    ports:
-      http1: 443
-EOF
-{{< /text >}}
+    {{< text bash >}}
+    $ kubectl apply --context=$CTX_CLUSTER1 -n foo -f - <<EOF
+    apiVersion: networking.istio.io/v1alpha3
+    kind: ServiceEntry
+    metadata:
+      name: httpbin-bar
+    spec:
+      hosts:
+      # must be of form name.namespace.global
+      - httpbin.bar.global
+      location: MESH_INTERNAL
+      ports:
+      - name: http1
+        number: 8000
+        protocol: http
+      resolution: DNS
+      addresses:
+      - 127.255.0.2
+      endpoints:
+      - address: ${CLUSTER2_GW_ADDR}
+        network: external
+        ports:
+          http1: ${CLUSTER2_GW_PORT}
+      - address: istio-egressgateway.istio-system.svc.cluster.local
+        ports:
+          http1: 443
+    EOF
+    {{< /text >}}
+
+1.  [Deploy Istio egress gateway](/docs/examples/advanced-gateways/egress-gateway/#deploy-istio-egress-gateway).
+
+1.  Send a request to `httpbin.bar`:
+
+    {{< text bash >}}
+    $ kubectl exec --context=$CTX_CLUSTER1 $SLEEP_POD -n foo -c sleep -- curl httpbin.bar.global:8000/headers
+    {{< /text >}}
+
+1.  Check the Envoy's access log of `httpbin` in `cluster2` to verify that the request indeed arrived to `cluster2`:
+
+    {{< text bash >}}
+    $ kubectl logs --context=$CTX_CLUSTER2 -l app=httpbin -n bar -c istio-proxy
+    [2019-03-07T08:56:02.628Z] "GET /headers HTTP/1.1" 200 - "-" 0 814 6 6 "-" "curl/7.60.0" "d25431f1-4f2c-412c-8950-e9a99082a3c1" "httpbin.bar.global:8000" "127.0.0.1:80" inbound|8000|http|httpbin.bar.svc.cluster.local - 172.30.148.247:80 172.30.148.241:43034 outbound_.8000_._.httpbin.bar.global
+    {{< /text >}}
+
+1.  Check the Envoy's access log of the egress gateway in `cluster1` to verify that the request indeed was routed
+    through the egress gateway:
+
+    {{< text bash >}}
+    $ kubectl logs -l istio=egressgateway -n istio-system
+    {{< /text >}}
 
 ## Version-aware routing to remote services
 
