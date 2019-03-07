@@ -162,6 +162,13 @@ running in a second cluster.
     $ kubectl exec --context=$CTX_CLUSTER1 $SLEEP_POD -n foo -c sleep -- curl httpbin.bar.global:8000/headers
     {{< /text >}}
 
+1. Check the Envoy's access log of `httpbin` in `cluster2` to verify that the request indeed arrived to `cluster2`:
+
+    {{< text bash >}}
+    $ kubectl logs --context=$CTX_CLUSTER2 -l app=httpbin -n bar -c istio-proxy
+    [2019-03-07T08:56:02.628Z] "GET /headers HTTP/1.1" 200 - "-" 0 814 6 6 "-" "curl/7.60.0" "d25431f1-4f2c-412c-8950-e9a99082a3c1" "httpbin.bar.global:8000" "127.0.0.1:80" inbound|8000|http|httpbin.bar.svc.cluster.local - 172.30.148.247:80 172.30.148.241:43034 outbound_.8000_._.httpbin.bar.global
+    {{< /text >}}
+
 ## Send remote cluster traffic using egress gateway
 
 If you want to route traffic from `cluster1` via a dedicated
