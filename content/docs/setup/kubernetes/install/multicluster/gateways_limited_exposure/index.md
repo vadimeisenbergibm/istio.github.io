@@ -394,101 +394,178 @@ running in a second cluster. Before you begin:
         EOF
         {{< /text >}}
 
-1. Verify that `httpbin` is accessible from the `sleep` service.
+1.  Verify that `httpbin` is accessible from the `sleep` service.
 
     {{< text bash >}}
-    $ kubectl exec --context=$CTX_CLUSTER1 $SLEEP_POD -n foo -c sleep -- curl -I httpbin.bar.global:8000/headers
+    $ kubectl exec --context=$CTX_CLUSTER1 $SLEEP_POD -n foo -c sleep -- curl -s httpbin.bar.global:8000/status/418
+    -=[ teapot ]=-
+
+       _...._
+     .'  _ _ `.
+    | ."` ^ `". _,
+    \_;`"---"`|//
+      |       ;/
+      \_     _/
+        `"""`
+
     {{< /text >}}
 
-### Send remote traffic via an egress gateway
+#### Expose additional service in cluster2
 
-If you want to route traffic from `cluster1` via a dedicated egress gateway, instead of directly from the sidecars,
-use the following service entry for `httpbin.bar` instead of the one in the previous section.
+1.  Create another service (`helloworld`) in `cluster2`:
 
-{{< tip >}}
-The egress gateway used in this configuration cannot also be used for other, non inter-cluster, egress traffic.
-{{< /tip >}}
+    {{< text bash >}}
+    $ kubectl apply --context=$CTX_CLUSTER2 -n bar -f @samples/helloworld/helloworld.yaml@ -l app=helloworld
+    $ kubectl apply --context=$CTX_CLUSTER2 -n bar -f @samples/helloworld/helloworld.yaml@ -l version=v1
+    {{< /text >}}
 
-If `$CLUSTER2_GW_ADDR` is an IP address, use the `$CLUSTER2_GW_ADDR - IP address` option.  If `$CLUSTER2_GW_ADDR` is a hostname, use the `$CLUSTER2_GW_ADDR - hostname` option.
+1.  Create a service entry in `cluster1` for the `helloworld` service in `cluster2`.
 
-{{< tabset cookie-name="profile" >}}
+    {{< text bash >}}
+    $ kubectl apply --context=$CTX_CLUSTER1 -n foo -f - <<EOF
+    apiVersion: networking.istio.io/v1alpha3
+    kind: ServiceEntry
+    metadata:
+      name: helloworld-bar
+    spec:
+      hosts:
+      # must be of form name.namespace.global
+      - helloworld.bar.global
+      # Treat remote cluster services as part of the service mesh
+      # as all clusters in the service mesh share the same root of trust.
+      location: MESH_INTERNAL
+      ports:
+      - name: http1
+        number: 5000
+        protocol: http
+      resolution: DNS
+      addresses:
+      # the IP address to which httpbin.bar.global will resolve to
+      # must be unique for each remote service, within a given cluster.
+      # This address need not be routable. Traffic for this IP will be captured
+      # by the sidecar and routed appropriately.
+      - 127.255.0.3
+      endpoints:
+      # This is the routable address of the ingress gateway in cluster2 that
+      # sits in front of sleep.foo service. Traffic from the sidecar will be
+      # routed to this address.
+      - address: ${CLUSTER2_GW_ADDR}
+        ports:
+          http1: 15443 # Do not change this port value
+    EOF
+    {{< /text >}}
 
-{{< tab name="$CLUSTER2_GW_ADDR - IP address" cookie-value="option1" >}}
-* Export the `cluster1` egress gateway address:
+1.  Create a destination rule to set SNI to `helloworld.bar.global`
 
-{{< text bash >}}
-$ export CLUSTER1_EGW_ADDR=$(kubectl get --context=$CTX_CLUSTER1 svc --selector=app=istio-egressgateway \
-    -n istio-system -o yaml -o jsonpath='{.items[0].spec.clusterIP}')
-{{< /text >}}
+    {{< text bash >}}
+    $ kubectl apply -n foo --context=$CTX_CLUSTER1 -f - <<EOF
+    apiVersion: networking.istio.io/v1alpha3
+    kind: DestinationRule
+    metadata:
+      name: helloworld-bar-global
+    spec:
+      host: helloworld.bar.global
+      trafficPolicy:
+        tls:
+          mode: ISTIO_MUTUAL
+          sni: helloworld.bar.global
+    EOF
+    {{< /text >}}
 
-* Apply the httpbin-bar service entry:
+1.  Verify that `helloworld` is not accessible from the `sleep` service, since it was not exposed in `cluster2` yet.
 
-{{< text bash >}}
-$ kubectl apply --context=$CTX_CLUSTER1 -n foo -f - <<EOF
-apiVersion: networking.istio.io/v1alpha3
-kind: ServiceEntry
-metadata:
-  name: httpbin-bar
-spec:
-  hosts:
-  # must be of form name.namespace.global
-  - httpbin.bar.global
-  location: MESH_INTERNAL
-  ports:
-  - name: http1
-    number: 8000
-    protocol: http
-  resolution: STATIC
-  addresses:
-  - 127.255.0.2
-  endpoints:
-  - address: ${CLUSTER2_GW_ADDR}
-    network: external
-    ports:
-      http1: 15443 # Do not change this port value
-  - address: ${CLUSTER1_EGW_ADDR}
-    ports:
-      http1: 15443
-EOF
-{{< /text >}}
+    {{< text bash >}}
+    $ kubectl exec --context=$CTX_CLUSTER1 $SLEEP_POD -n foo -c sleep -- curl -s helloworld.bar.global:5000/hello
+    upstream connect error or disconnect/reset before headers. reset reason: connection failure
+    {{< /text >}}
 
-{{< /tab >}}
+1.  Verify that `httpbin` is still accessible:
 
-{{< tab name="$CLUSTER2_GW_ADDR - hostname" cookie-value="option2" >}}
-If the `${CLUSTER2_GW_ADDR}` is a hostname, you can use `resolution: DNS` for the endpoint resolution:
+    {{< text bash >}}
+    $ kubectl exec --context=$CTX_CLUSTER1 $SLEEP_POD -n foo -c sleep -- curl -s httpbin.bar.global:8000/status/418
+    -=[ teapot ]=-
 
-{{< text bash >}}
-$ kubectl apply --context=$CTX_CLUSTER1 -n foo -f - <<EOF
-apiVersion: networking.istio.io/v1alpha3
-kind: ServiceEntry
-metadata:
-  name: httpbin-bar
-spec:
-  hosts:
-  # must be of form name.namespace.global
-  - httpbin.bar.global
-  location: MESH_INTERNAL
-  ports:
-  - name: http1
-    number: 8000
-    protocol: http
-  resolution: DNS
-  addresses:
-  - 127.255.0.2
-  endpoints:
-  - address: ${CLUSTER2_GW_ADDR}
-    network: external
-    ports:
-      http1: 15443 # Do not change this port value
-  - address: istio-egressgateway.istio-system.svc.cluster.local
-    ports:
-      http1: 15443
-EOF
-{{< /text >}}
+       _...._
+     .'  _ _ `.
+    | ."` ^ `". _,
+    \_;`"---"`|//
+      |       ;/
+      \_     _/
+        `"""`
 
-{{< /tab >}}
+    {{< /text >}}
 
-{{< /tabset >}}
+1.  Expose `helloworld` by defining a gateway and a virtual service for it in the following two steps:
+
+    {{< text bash >}}
+    $ kubectl apply -n istio-system --context=$CTX_CLUSTER2 -f - <<EOF
+    apiVersion: networking.istio.io/v1alpha3
+    kind: Gateway
+    metadata:
+      name: helloworld-gateway
+    spec:
+      selector:
+        istio: ingressgateway # use istio default ingress gateway
+      servers:
+      - port:
+          number: 15443
+          name: https
+          protocol: HTTPS
+        tls:
+          mode: PASSTHROUGH
+        hosts:
+        - helloworld.bar.global
+    EOF
+    {{< /text >}}
+
+1.  Configure routing for `helloworld`:
+
+    {{< text bash >}}
+    $ kubectl apply -n istio-system --context=$CTX_CLUSTER2 -f - <<EOF
+    apiVersion: networking.istio.io/v1alpha3
+    kind: VirtualService
+    metadata:
+      name: helloworld-bar-global
+    spec:
+      hosts:
+      - helloworld.bar.global
+      gateways:
+      - helloworld-gateway
+      tls:
+      - match:
+        - port: 15443
+          sni_hosts:
+          - helloworld.bar.global
+        route:
+        - destination:
+            host: helloworld.bar.svc.cluster.local
+            port:
+              number: 5000
+    EOF
+    {{< /text >}}
+
+1.  Verify that `helloworld` is not accessible from the `sleep` service, since it was not exposed in `cluster2` yet.
+
+    {{< text bash >}}
+    $ kubectl exec --context=$CTX_CLUSTER1 $SLEEP_POD -n foo -c sleep -- curl -s helloworld.bar.global:5000/hello
+    Hello version: v1, instance: helloworld-v1-7b984f4489-gb7x5
+    {{< /text >}}
+
+1.  Verify that `httpbin` is still accessible:
+
+    {{< text bash >}}
+    $ kubectl exec --context=$CTX_CLUSTER1 $SLEEP_POD -n foo -c sleep -- curl -s httpbin.bar.global:8000/status/418
+    -=[ teapot ]=-
+
+       _...._
+     .'  _ _ `.
+    | ."` ^ `". _,
+    \_;`"---"`|//
+      |       ;/
+      \_     _/
+        `"""`
+
+    {{< /text >}}
 
 ### Cleanup the example
 
