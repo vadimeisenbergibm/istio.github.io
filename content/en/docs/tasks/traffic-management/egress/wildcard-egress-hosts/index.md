@@ -203,13 +203,18 @@ the set of domains.
     <title>Wikipedia – Die freie Enzyklopädie</title>
     {{< /text >}}
 
-1.  Check the statistics of the egress gateway's proxy for the counter that corresponds to your
-    requests to _*.wikipedia.org_. If Istio is deployed in the `istio-system` namespace, the command to print the
-    counter is:
+1.  Check the log of the egress gateway's Envoy proxy. If Istio is deployed in the `istio-system` namespace, the command to
+    print the log is:
 
     {{< text bash >}}
-    $ kubectl exec -it $(kubectl get pod -l istio=egressgateway -n istio-system -o jsonpath='{.items[0].metadata.name}') -c istio-proxy -n istio-system -- curl -s localhost:15000/stats | grep www.wikipedia.org.upstream_cx_total
-    cluster.outbound|443||www.wikipedia.org.upstream_cx_total: 2
+    $ kubectl logs -l istio=egressgateway -c istio-proxy -n istio-system
+    {{< /text >}}
+
+    You should see lines similar to the following:
+
+    {{< text plain >}}
+    [2019-09-12T06:49:19.206Z] "- - -" 0 - "-" "-" 797 87988 237 - "-" "-" "-" "-" "208.80.154.224:443" outbound|443||www.wikipedia.org 172.30.209.187:34306 172.30.209.187:443 172.30.239.32:46752 en.wikipedia.org -
+    [2019-09-12T06:49:19.923Z] "- - -" 0 - "-" "-" 808 66503 231 - "-" "-" "-" "-" "208.80.154.224:443" outbound|443||www.wikipedia.org 172.30.209.187:34312 172.30.209.187:443 172.30.239.32:46760 de.wikipedia.org -
     {{< /text >}}
 
 #### Cleanup wildcard configuration for a single hosting server
@@ -343,12 +348,9 @@ The SNI proxy will forward the traffic to port `443`.
 
     {{< text bash >}}
     $ kubectl apply -f ./istio-egressgateway-with-sni-proxy.yaml
-    serviceaccount "istio-egressgateway-with-sni-proxy-service-account" created
-    role "istio-egressgateway-with-sni-proxy-istio-system" created
-    rolebinding "istio-egressgateway-with-sni-proxy-istio-system" created
-    service "istio-egressgateway-with-sni-proxy" created
-    deployment "istio-egressgateway-with-sni-proxy" created
-    horizontalpodautoscaler "istio-egressgateway-with-sni-proxy" created
+    serviceaccount/istio-egressgateway-with-sni-proxy-service-account created
+    service/istio-egressgateway-with-sni-proxy created
+    deployment.apps/istio-egressgateway-with-sni-proxy created
     {{< /text >}}
 
 1.  Verify that the new egress gateway is running. Note that the pod has two containers (one is the Envoy proxy and the
