@@ -1,6 +1,6 @@
 ---
 title: Access policies with Kubernetes and Istio
-overview: Apply Kubernetes Network Policies and Istio RBAC
+overview: Apply Kubernetes Network Policies and Istio Authorization Policies
 
 weight: 170
 
@@ -27,7 +27,7 @@ HTTP POST method must be prohibited.
 
 In this module you add access policies to enforce the access requirements above. You use two different mechanisms:
 [Kubernetes Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) and
-[Istio RBAC](/docs/concepts/security/#authorization).
+[Istio Authorization Policies](/docs/concepts/security/#authorization).
 
 First, verify that without access policies in place, any microservice can access any microservice, including sending
 POST requests to `ratings`.
@@ -162,7 +162,7 @@ Enable access policies in the following sections to limit access to the microser
     {"id":0,"ratings":{"Reviewer1":5,"Reviewer2":4}}
     {{< /text >}}
 
-    Delete the Kubernetes Network Policies in the next subsection and proceed to define Istio RBAC policies.
+    Delete the Kubernetes Network Policies in the next subsection and proceed to define Istio Authorization Policies policies.
 
 ### Clean Kubernetes Network Policies
 
@@ -301,12 +301,12 @@ In this section you apply Istio [Authorization Policies](/docs/concepts/security
     {"id":0,"ratings":{"Reviewer1":5,"Reviewer2":4}}
     {{< /text >}}
 
-In this module you used Kubernetes Network Policies and Istio RBAC rules to enforce access control requirements for your
-application. Note that Istio RBAC provides more flexibility than Kubernetes Network Policies since it allows to specify
+In this module you used Kubernetes Network Policies and Istio Authorization Policies rules to enforce access control requirements for your
+application. Note that Istio Authorization Policies provides more flexibility than Kubernetes Network Policies since it allows to specify
 HTTP parameters of the access, in your case which HTTP method which microservice is allowed to apply on which
 microservice. Also note that you can follow the
 [Defense in depth](https://en.wikipedia.org/wiki/Defense_in_depth_(computing)) principle and apply Kubernetes
-Network Policies together with Istio RBAC.
+Network Policies together with Istio Authorization Policies.
 
 ## Cleanup
 
