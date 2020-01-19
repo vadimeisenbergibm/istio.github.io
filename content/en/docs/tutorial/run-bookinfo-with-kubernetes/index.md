@@ -128,7 +128,7 @@ configure the steps below successfully, you will be able to access the applicati
             backend:
               serviceName: productpage
               servicePort: 9080
-          - path: /static
+          - path: /static/*
             backend:
               serviceName: productpage
               servicePort: 9080
